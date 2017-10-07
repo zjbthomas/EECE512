@@ -1,30 +1,58 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>eece512</groupId>
-  <artifactId>eece512</artifactId>
-  <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
-  <name>eece512</name>
-  <url>http://maven.apache.org</url>
-  <dependencies>
-  <dependency>
-    <groupId>ca.mcgill.sable</groupId>
-    <artifactId>soot</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
-  </dependency>
-  <dependency>
-  <groupId>junit</groupId>
-  <artifactId>junit-dep</artifactId>
-  <version>4.10</version>
-  <scope>test</scope>
-</dependency> 
-</dependencies>
-<repositories>
-  <repository>
-    <id>soot-snapshot</id>
-    <name>soot snapshots</name>
-    <url>https://soot-build.cs.uni-paderborn.de/nexus/repository/soot-snapshot/</url>
-  </repository>
-</repositories>	
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>eece512</groupId>
+	<artifactId>eece512</artifactId>
+	<packaging>jar</packaging>
+	<version>1.0-SNAPSHOT</version>
+	<name>eece512</name>
+	<url>http://maven.apache.org</url>
+	<dependencies>
+		<dependency>
+			<groupId>ca.mcgill.sable</groupId>
+			<artifactId>soot</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.tony19</groupId>
+			<artifactId>apktool-lib</artifactId>
+			<version>1.4.4-3</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.6-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.6</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.dom4j</groupId>
+			<artifactId>dom4j</artifactId>
+			<version>2.1.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit-dep</artifactId>
+			<version>4.10</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<repositories>
+		<repository>
+			<id>soot-snapshot</id>
+			<name>soot snapshots</name>
+			<url>https://soot-build.cs.uni-paderborn.de/nexus/repository/soot-snapshot/</url>
+		</repository>
+		<repository>
+			<id>apache-snapshot</id>
+			<name>apache.snapshots</name>
+			<url>https://repository.apache.org/snapshots</url>
+		</repository>
+	</repositories>
 </project>
