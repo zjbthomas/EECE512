@@ -1,0 +1,6 @@
+/target/
+/apk/
+/sootOutput/
+/.settings/
+.classpath
+.project
