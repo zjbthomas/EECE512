@@ -10,6 +10,6 @@ public class SingleApkAnalyzer {
 	 * args[1]: Android platforms
 	 */
 	public static void main(String[] args) throws Exception {
-		BatchApkTester.apkTester(args[0], args[1], false);
+		BatchApkTester.apkTester(args[0], args[1], false, false);
 	}
 }

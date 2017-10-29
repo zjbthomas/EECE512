@@ -40,8 +40,9 @@ public class BatchApkTester {
 			
 			// Run apkTester
 			try {
-				String[] passwordIds = apkTester(f.toString(), args[1], true);
-				if (passwordIds.length > 0) {
+				boolean detected = apkTester(f.toString(), args[1], true, true);
+				// Skip if no EditText for password found
+				if (detected) {
 					detectedApk.add(f.toString());
 				} else {
 					System.out.println("No password EditText detected, skipped");
@@ -88,7 +89,7 @@ public class BatchApkTester {
 	    return ret;
 	}
 	
-	public static String[] apkTester(String apkPath, String sdkPath, boolean noSoot) throws Exception {
+	public static boolean apkTester(String apkPath, String sdkPath, boolean noSoot, boolean skipIfNoDetection) throws Exception {
 		// Generate input parameters for ApkDecoder
 		ArrayList<String> apkDecoderInputs = new ArrayList<String>();
 		apkDecoderInputs.add("-android-jars");
@@ -106,6 +107,10 @@ public class BatchApkTester {
 		// Find EditText for password inputs
 		String[] passwordIds;
 		passwordIds = ApkDecoder.findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
+		// Skip if no EditText for password found
+		if (skipIfNoDetection && passwordIds.length <= 0) {
+			return false;
+		}
 		// Generate input parameters for FlowDroid
 		ArrayList<String> flowDroidInputs = new ArrayList<String>();
 		flowDroidInputs.add(apkPath);
@@ -118,6 +123,6 @@ public class BatchApkTester {
 		// Run FlowDroid
 		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
 		// Return passwordIds
-		return passwordIds;
+		return true;
 	}
 }
