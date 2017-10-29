@@ -3,6 +3,7 @@ package eece512;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +20,7 @@ import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 
+import polyglot.main.Main;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.G;
@@ -35,25 +37,20 @@ import soot.toolkits.graph.UnitGraph;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
 public class ApkDecoder {
-	public static void apkTool(String apkPath, String apkToolPath) throws Exception {
+	public static void apkTool(String apkPath) throws Exception {
 		System.out.println("Decoding APK " + apkPath);
 
 		// Check files exist
 		if (!new File(apkPath).exists()) {
 			throw new Exception("APK " + apkPath + "not exists");
 		}
-		if (!new File(apkToolPath).exists()) {
-			throw new Exception("Apktool " + apkToolPath + "not exists");
-		}
 
-		// Run command line
-		Process pr = Runtime.getRuntime()
-				.exec("java -jar " + apkToolPath + " d -f " + apkPath + " -o " + apkPath.replaceAll("\\.apk", ""));
-
-		// Waiting for result
-		if (pr.waitFor() != 0) {
-			throw new Exception("Error in decoding APK");
-		}
+		// Run ApkTool
+		brut.androlib.ApkDecoder decoder = new brut.androlib.ApkDecoder(new File(apkPath));
+		decoder.setOutDir(new File(apkPath.replaceAll("\\.apk", "")));
+		decoder.setForceDelete(true);
+		decoder.decode();
+		decoder.close();
 
 		System.out.println("Finished decoding APK");
 	}
@@ -117,18 +114,10 @@ public class ApkDecoder {
 	public static void main(String[] args) throws Exception {
 		// Get the name of APK and the path to Apktool
 		String apkPath = "";
-		String apkToolPath = "";
 		boolean noSoot = false;
 		for (int s = 0; s < args.length; s++) {
 			if (args[s].contains(".apk")) {
 				apkPath = args[s];
-			}
-			if (args[s].contains("apktool.jar")) {
-				apkToolPath = args[s];
-				// Drop this element from args
-				args = ArrayUtils.removeElement(args, args[s]);
-				s--;
-				continue;
 			}
 			if (args[s].contains("-nosoot")) {
 				noSoot = true;
@@ -140,7 +129,7 @@ public class ApkDecoder {
 		}
 
 		// Decode APK
-		apkTool(apkPath, apkToolPath);
+		apkTool(apkPath);
 
 		if (noSoot) {
 			return;
