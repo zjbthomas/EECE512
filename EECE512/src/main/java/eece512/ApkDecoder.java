@@ -35,9 +35,8 @@ import soot.toolkits.graph.UnitGraph;
 import soot.toolkits.scalar.ForwardFlowAnalysis;
 
 public class ApkDecoder {
-
 	public static void apkTool(String apkPath, String apkToolPath) throws Exception {
-		System.out.println("Decoding APK " + apkPath + "...");
+		System.out.println("Decoding APK " + apkPath);
 
 		// Check files exist
 		if (!new File(apkPath).exists()) {
@@ -119,6 +118,7 @@ public class ApkDecoder {
 		// Get the name of APK and the path to Apktool
 		String apkPath = "";
 		String apkToolPath = "";
+		boolean noSoot = false;
 		for (int s = 0; s < args.length; s++) {
 			if (args[s].contains(".apk")) {
 				apkPath = args[s];
@@ -128,11 +128,23 @@ public class ApkDecoder {
 				// Drop this element from args
 				args = ArrayUtils.removeElement(args, args[s]);
 				s--;
+				continue;
+			}
+			if (args[s].contains("-nosoot")) {
+				noSoot = true;
+				// Drop this element from args
+				args = ArrayUtils.removeElement(args, args[s]);
+				s--;
+				continue;
 			}
 		}
 
 		// Decode APK
 		apkTool(apkPath, apkToolPath);
+
+		if (noSoot) {
+			return;
+		}
 		
 		// Options for Soot
 		Options.v().set_src_prec(Options.src_prec_apk); // Target to input APK
@@ -151,9 +163,6 @@ public class ApkDecoder {
 
 		// Entry point for Soot
 		soot.Main.main(args);
-		
-		// Find EditText for password inputs
-		final String[] passwordIds = findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
 	}
 }
 
