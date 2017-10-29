@@ -1,8 +1,11 @@
-Arguments for ApkTester:
-/path/to/folder/of/apks /path/to/apktool.jar /path/to/SDK-platforms
+Arguments for BatchApkTester:
+/path/to/folder/of/apks /path/to/SDK-platforms [/path/to/staring/apk]
+
+Arguments for SingleApkAnalyzer:
+/path/to/apk /path/to/SDK-platforms
 
 Arguments for ApkDecoder:
-/path/to/apktool.jar -allow-phantom-refs -android-jars /path/to/SDK-platforms -process-dir /path/to/apk -x android.*
+-allow-phantom-refs -android-jars /path/to/SDK-platforms -process-dir /path/to/apk -x android.*
 
 Arguments for FlowDroid:
 /path/to/apk  /path/to/SDK-platforms --pathalgo CONTEXTSENSITIVE --paths --aplength n

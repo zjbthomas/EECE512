@@ -7,8 +7,9 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import soot.jimple.infoflow.android.TestApps.Test;
 
-public class ApkTester {
+public class BatchApkTester {
 	final static int ARGSLENGTH = 3;
+	final static int APLENGTH = 100;
 	
 	/*
 	 * args[0]: root folder
@@ -37,52 +38,15 @@ public class ApkTester {
 				startPoint = null;
 			}
 			
-			// Generate input parameters for ApkDecoder
-			ArrayList<String> apkDecoderInputs = new ArrayList<String>();
-			apkDecoderInputs.add("-android-jars");
-			apkDecoderInputs.add(args[1]);
-			apkDecoderInputs.add("-allow-phantom-refs");
-			apkDecoderInputs.add("-x");
-			apkDecoderInputs.add("android.*");
-			apkDecoderInputs.add("-process-dir");
-			apkDecoderInputs.add(f.toString());
-			apkDecoderInputs.add("-nosoot");
-			// Run ApkDecoder
+			// Run apkTester
 			try {
-				ApkDecoder.main(apkDecoderInputs.toArray(new String[apkDecoderInputs.size()]));
-			} catch (Exception e) {
-				e.printStackTrace();
-				errorApk.add(f.toString());
-				continue;
-			}
-			// Find EditText for password inputs
-			String[] passwordIds;
-			try {
-				passwordIds = ApkDecoder.findPasswordIds(f.toString().replaceAll("\\.apk", "") + "\\res");
-			} catch (Exception e) {
-				e.printStackTrace();
-				errorApk.add(f.toString());
-				continue;
-			}
-			// If there is detected password EditText, add it for double check
-			if (passwordIds.length > 0) {
-				detectedApk.add(f.toString());
-			} else {
-				System.out.println("No password EditText detected, skipped");
-				continue;
-			}
-			// Generate input parameters for FlowDroid
-			ArrayList<String> flowDroidInputs = new ArrayList<String>();
-			flowDroidInputs.add(f.toString());
-			flowDroidInputs.add(args[1]);
-			flowDroidInputs.add("--pathalgo");
-			flowDroidInputs.add("CONTEXTSENSITIVE");
-			flowDroidInputs.add("--paths");
-			flowDroidInputs.add("--aplength");
-			flowDroidInputs.add("100");
-			// Run FlowDroid
-			try {
-				Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
+				String[] passwordIds = apkTester(f.toString(), args[1], true);
+				if (passwordIds.length > 0) {
+					detectedApk.add(f.toString());
+				} else {
+					System.out.println("No password EditText detected, skipped");
+					continue;
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 				errorApk.add(f.toString());
@@ -96,11 +60,12 @@ public class ApkTester {
 			fileWriter = new FileWriter("list.txt");
 		    PrintWriter printWriter = new PrintWriter(fileWriter);
 		    // Write detected APKs
+		    printWriter.println("APKs with EditText for passwords:");
 		    for (String apk : detectedApk) {
 		    	printWriter.println(apk);
 		    }
 		    // Write error APKs
-		    printWriter.println();
+		    printWriter.println("\nAPKs cannot be analysed automatically (with error):");
 		    for (String apk : detectedApk) {
 		    	printWriter.println(apk);
 		    }
@@ -121,5 +86,38 @@ public class ApkTester {
 	        }
 	    }
 	    return ret;
+	}
+	
+	public static String[] apkTester(String apkPath, String sdkPath, boolean noSoot) throws Exception {
+		// Generate input parameters for ApkDecoder
+		ArrayList<String> apkDecoderInputs = new ArrayList<String>();
+		apkDecoderInputs.add("-android-jars");
+		apkDecoderInputs.add(sdkPath);
+		apkDecoderInputs.add("-allow-phantom-refs");
+		apkDecoderInputs.add("-x");
+		apkDecoderInputs.add("android.*");
+		apkDecoderInputs.add("-process-dir");
+		apkDecoderInputs.add(apkPath);
+		if (noSoot) {
+			apkDecoderInputs.add("-nosoot");
+		}
+		// Run ApkDecoder
+		ApkDecoder.main(apkDecoderInputs.toArray(new String[apkDecoderInputs.size()]));
+		// Find EditText for password inputs
+		String[] passwordIds;
+		passwordIds = ApkDecoder.findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
+		// Generate input parameters for FlowDroid
+		ArrayList<String> flowDroidInputs = new ArrayList<String>();
+		flowDroidInputs.add(apkPath);
+		flowDroidInputs.add(sdkPath);
+		flowDroidInputs.add("--pathalgo");
+		flowDroidInputs.add("CONTEXTSENSITIVE");
+		flowDroidInputs.add("--paths");
+		flowDroidInputs.add("--aplength");
+		flowDroidInputs.add(String.valueOf(APLENGTH));
+		// Run FlowDroid
+		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
+		// Return passwordIds
+		return passwordIds;
 	}
 }
