@@ -20,7 +20,6 @@ import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 
-import polyglot.main.Main;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.G;
