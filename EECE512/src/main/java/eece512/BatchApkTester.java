@@ -5,10 +5,21 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Iterator;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.Node;
+import org.dom4j.io.SAXReader;
+
 import soot.jimple.infoflow.android.TestApps.Test;
 
 public class BatchApkTester {
-	final static int ARGSLENGTH = 3;
+	final static int ARGSLENGTH = 2;
 	final static int APLENGTH = 100;
 	
 	/*
@@ -16,12 +27,13 @@ public class BatchApkTester {
 	 * args[1]: Android platforms
 	 * args[2]: (Optional) staring point
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		String startPoint = null;
 		if (args.length < ARGSLENGTH) {
 			System.out.println("Not enough arguments!");
-		} else if (args.length == ARGSLENGTH) {
-			startPoint = args[ARGSLENGTH - 1];
+			return;
+		} else if (args.length == ARGSLENGTH + 1) {
+			startPoint = args[ARGSLENGTH];
 		}
 		
 		// Find APKs from input folder
@@ -30,6 +42,7 @@ public class BatchApkTester {
 		
 		ArrayList<String> detectedApk = new ArrayList<String>();
 		ArrayList<String> errorApk = new ArrayList<String>();
+		ArrayList<String> obfuscationApk = new ArrayList<String>();
 		for (File f : apkList) {
 			// Skip until starting point detected
 			if (startPoint != null && !startPoint.equals(f.toString())) {
@@ -38,16 +51,26 @@ public class BatchApkTester {
 				startPoint = null;
 			}
 			
-			// Run apkTester
 			try {
-				boolean detected = apkTester(f.toString(), args[1], true, true);
+				// Print separator
+				System.out.println("---");
+				// Run APK decoder
+				boolean detected = decodeApk(f.toString(), args[1], true, true, true);
 				// Skip if no EditText for password found
 				if (detected) {
 					detectedApk.add(f.toString());
 				} else {
-					System.out.println("No password EditText detected, skipped");
+					System.out.println("[IMPORTANT] No password EditText detected, skipped");
 					continue;
 				}
+				// Run obfuscation detection
+				if (detectObfuscation(new File(f.toString().replaceAll("\\.apk", "")))) {
+					obfuscationApk.add(f.toString());
+					System.out.println("[IMPORTANT] Obfuscation detected, skipped");
+					continue;
+				}
+				// Run FlowDroid
+				flowDroid(f.toString(), args[1]);
 			} catch (Exception e) {
 				e.printStackTrace();
 				errorApk.add(f.toString());
@@ -60,14 +83,22 @@ public class BatchApkTester {
 			FileWriter fileWriter;
 			fileWriter = new FileWriter("list.txt");
 		    PrintWriter printWriter = new PrintWriter(fileWriter);
+		    // Write Statistics
+		    printWriter.println("Total number of APKs: " + apkList.size());
+		    printWriter.println("Number of APKs cannot be analysed automatically(with error): " + errorApk.size());
+		    printWriter.println("Number of APKs with EditText for passwords: " + detectedApk.size());
+		    printWriter.println("Number of obfuscated APKs: " + obfuscationApk.size());
+		    printWriter.println("Success Rate:" + ((double)(apkList.size() - errorApk.size()) / apkList.size()));
+		    printWriter.println("Detect Rate:" + ((double)detectedApk.size() / (apkList.size() - errorApk.size())));
+		    printWriter.println("Obfuscation Rate:" + ((double)obfuscationApk.size() / (apkList.size() - errorApk.size())));
 		    // Write detected APKs
-		    printWriter.println("APKs with EditText for passwords:");
+		    printWriter.println("\nAPKs with EditText for passwords:");
 		    for (String apk : detectedApk) {
 		    	printWriter.println(apk);
 		    }
 		    // Write error APKs
 		    printWriter.println("\nAPKs cannot be analysed automatically (with error):");
-		    for (String apk : detectedApk) {
+		    for (String apk : errorApk) {
 		    	printWriter.println(apk);
 		    }
 		    printWriter.close();
@@ -76,12 +107,15 @@ public class BatchApkTester {
 		}
 	}
 	 
-	public static ArrayList<File> findApk(File dir){
+	public static ArrayList<File> findApk(File dir) throws Exception{
 		ArrayList<File> ret = new ArrayList<File>();
 	    for(File f: dir.listFiles()){
 	        if(f.isFile() && f.toString().contains(".apk")){
-	        	//System.out.println("Add " + f.toString() + " to list");
+	        	System.out.println("Add " + f.toString() + " to list");
 	        	ret.add(f);
+	        	
+	        	// Pre-delete folder
+	    		FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
 	        }else if(f.isDirectory()){
 	        	ret.addAll(findApk(f));
 	        }
@@ -89,7 +123,7 @@ public class BatchApkTester {
 	    return ret;
 	}
 	
-	public static boolean apkTester(String apkPath, String sdkPath, boolean noSoot, boolean skipIfNoDetection) throws Exception {
+	public static boolean decodeApk(String apkPath, String sdkPath, boolean noSoot, boolean skipIfNoDetection, boolean delDir) throws Exception {
 		// Generate input parameters for ApkDecoder
 		ArrayList<String> apkDecoderInputs = new ArrayList<String>();
 		apkDecoderInputs.add("-android-jars");
@@ -107,10 +141,19 @@ public class BatchApkTester {
 		// Find EditText for password inputs
 		String[] passwordIds;
 		passwordIds = ApkDecoder.findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
+		// Delete folder
+		if (delDir) {
+			FileUtils.deleteDirectory(new File(apkPath.replaceAll("\\.apk", "")));
+		}
 		// Skip if no EditText for password found
 		if (skipIfNoDetection && passwordIds.length <= 0) {
 			return false;
+		} else {
+			return true;
 		}
+	}
+	
+	public static void flowDroid(String apkPath, String sdkPath) throws Exception {
 		// Generate input parameters for FlowDroid
 		ArrayList<String> flowDroidInputs = new ArrayList<String>();
 		flowDroidInputs.add(apkPath);
@@ -122,7 +165,30 @@ public class BatchApkTester {
 		flowDroidInputs.add(String.valueOf(APLENGTH));
 		// Run FlowDroid
 		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
-		// Return passwordIds
-		return true;
+	}
+	
+	/*
+	 * Input should be the root folder of APKTool
+	 */
+	public static boolean detectObfuscation(File dir) {
+		for(File f: dir.listFiles()){
+			if (f.isDirectory() && f.toString().contains("smali")) {
+				if (detectObfuscationInSmali(f)) {
+					return true;
+				}
+			}
+	    }
+		return false;
+	}
+	
+	public static boolean detectObfuscationInSmali(File dir) {
+		for(File f: dir.listFiles()){
+			if (f.isDirectory()) {
+				return detectObfuscationInSmali(f);
+			} else if (f.getAbsolutePath().contains("\\a\\a.smali")) {
+				return true;
+			}
+	    }
+		return false;
 	}
 }
