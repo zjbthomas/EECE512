@@ -100,6 +100,11 @@ public class BatchApkTester {
 		    for (String apk : detectedApk) {
 		    	printWriter.println(apk);
 		    }
+		    // Write APKs with obfuscation
+		    printWriter.println("\nAPK with obobfuscation");
+		    for (String apk : obfuscationApk) {
+		    	printWriter.println(apk);
+		    }
 		    // Write error APKs
 		    printWriter.println("\nAPKs cannot be analysed automatically (with error):");
 		    for (String apk : errorApk) {
