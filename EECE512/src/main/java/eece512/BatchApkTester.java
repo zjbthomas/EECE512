@@ -38,7 +38,7 @@ public class BatchApkTester {
 		
 		// Find APKs from input folder
 		File rootDir = new File(args[0]);
-		ArrayList<File> apkList = findApk(rootDir);
+		ArrayList<File> apkList = findApk(rootDir, 2);
 		
 		ArrayList<String> detectedApk = new ArrayList<String>();
 		ArrayList<String> errorApk = new ArrayList<String>();
@@ -107,7 +107,7 @@ public class BatchApkTester {
 		}
 	}
 	 
-	public static ArrayList<File> findApk(File dir) throws Exception{
+	public static ArrayList<File> findApk(File dir, int depth) throws Exception{
 		ArrayList<File> ret = new ArrayList<File>();
 	    for(File f: dir.listFiles()){
 	        if(f.isFile() && f.toString().contains(".apk")){
@@ -116,8 +116,8 @@ public class BatchApkTester {
 	        	
 	        	// Pre-delete folder
 	    		FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
-	        }else if(f.isDirectory()){
-	        	ret.addAll(findApk(f));
+	        }else if(f.isDirectory() && depth != 1){
+	        	ret.addAll(findApk(f, depth - 1));
 	        }
 	    }
 	    return ret;
