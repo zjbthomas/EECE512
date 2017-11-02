@@ -12,7 +12,7 @@ public class SingleApkAnalyzer {
 	 */
 	public static void main(String[] args) throws Exception {
 		// Run APK decoder
-		boolean detected = BatchApkTester.decodeApk(args[0], args[1], false, false, false);
+		boolean detected = BatchApkTester.decodeApk(args[0], args[1], false, false);
 		// Run obfuscation detection
 		if (BatchApkTester.detectObfuscation(new File(args[0].replaceAll("\\.apk", "")))) {
 			System.out.println("[IMPORTANT] Obfuscation detected");

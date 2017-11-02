@@ -55,25 +55,29 @@ public class BatchApkTester {
 				// Print separator
 				System.out.println("---");
 				// Run APK decoder
-				boolean detected = decodeApk(f.toString(), args[1], true, true, true);
+				boolean detected = decodeApk(f.toString(), args[1], true, true);
 				// Skip if no EditText for password found
 				if (detected) {
 					detectedApk.add(f.toString());
 				} else {
 					System.out.println("[IMPORTANT] No password EditText detected, skipped");
+					FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
 					continue;
 				}
 				// Run obfuscation detection
 				if (detectObfuscation(new File(f.toString().replaceAll("\\.apk", "")))) {
 					obfuscationApk.add(f.toString());
 					System.out.println("[IMPORTANT] Obfuscation detected, skipped");
+					FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
 					continue;
 				}
 				// Run FlowDroid
 				flowDroid(f.toString(), args[1]);
+				FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
 			} catch (Exception e) {
 				e.printStackTrace();
 				errorApk.add(f.toString());
+				FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
 				continue;
 			}
 		}
@@ -123,7 +127,7 @@ public class BatchApkTester {
 	    return ret;
 	}
 	
-	public static boolean decodeApk(String apkPath, String sdkPath, boolean noSoot, boolean skipIfNoDetection, boolean delDir) throws Exception {
+	public static boolean decodeApk(String apkPath, String sdkPath, boolean noSoot, boolean skipIfNoDetection) throws Exception {
 		// Generate input parameters for ApkDecoder
 		ArrayList<String> apkDecoderInputs = new ArrayList<String>();
 		apkDecoderInputs.add("-android-jars");
@@ -141,10 +145,6 @@ public class BatchApkTester {
 		// Find EditText for password inputs
 		String[] passwordIds;
 		passwordIds = ApkDecoder.findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
-		// Delete folder
-		if (delDir) {
-			FileUtils.deleteDirectory(new File(apkPath.replaceAll("\\.apk", "")));
-		}
 		// Skip if no EditText for password found
 		if (skipIfNoDetection && passwordIds.length <= 0) {
 			return false;
