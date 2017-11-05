@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
@@ -16,6 +17,7 @@ import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 
+import soot.jimple.infoflow.android.TestApps.ResultsHandler;
 import soot.jimple.infoflow.android.TestApps.Test;
 
 public class BatchApkTester {
@@ -55,9 +57,9 @@ public class BatchApkTester {
 				// Print separator
 				System.out.println("---");
 				// Run APK decoder
-				boolean detected = decodeApk(f.toString(), args[1], true, true);
+				String[] passwordIds = decodeApk(f.toString(), args[1], true);
 				// Skip if no EditText for password found
-				if (detected) {
+				if (passwordIds.length > 0) {
 					detectedApk.add(f.toString());
 				} else {
 					System.out.println("[IMPORTANT] No password EditText detected, skipped");
@@ -67,12 +69,17 @@ public class BatchApkTester {
 				// Run obfuscation detection
 				if (detectObfuscation(new File(f.toString().replaceAll("\\.apk", "")))) {
 					obfuscationApk.add(f.toString());
-					System.out.println("[IMPORTANT] Obfuscation detected, skipped");
-					FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
-					continue;
+					System.out.println("[IMPORTANT] Obfuscation detected");
 				}
 				// Run FlowDroid
 				flowDroid(f.toString(), args[1]);
+				// Find digital ID corresponding to String ID
+				HashMap<Integer, String> digitalIds = ApkDecoder.findDigitalIds(args[0].replaceAll("\\.apk", "") + "\\soot", passwordIds);
+				// Feed digital ID into ResultsHanlder
+				ResultsHandler.feedPasswordIds(digitalIds);
+				// Handle results
+				ResultsHandler.handleResults();
+				// Delete folder
 				FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -101,7 +108,7 @@ public class BatchApkTester {
 		    	printWriter.println(apk);
 		    }
 		    // Write APKs with obfuscation
-		    printWriter.println("\nAPK with obobfuscation");
+		    printWriter.println("\nAPK with obobfuscation:");
 		    for (String apk : obfuscationApk) {
 		    	printWriter.println(apk);
 		    }
@@ -132,7 +139,7 @@ public class BatchApkTester {
 	    return ret;
 	}
 	
-	public static boolean decodeApk(String apkPath, String sdkPath, boolean noSoot, boolean skipIfNoDetection) throws Exception {
+	public static String[] decodeApk(String apkPath, String sdkPath, boolean noSoot) throws Exception {
 		// Generate input parameters for ApkDecoder
 		ArrayList<String> apkDecoderInputs = new ArrayList<String>();
 		apkDecoderInputs.add("-android-jars");
@@ -148,14 +155,7 @@ public class BatchApkTester {
 		// Run ApkDecoder
 		ApkDecoder.main(apkDecoderInputs.toArray(new String[apkDecoderInputs.size()]));
 		// Find EditText for password inputs
-		String[] passwordIds;
-		passwordIds = ApkDecoder.findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
-		// Skip if no EditText for password found
-		if (skipIfNoDetection && passwordIds.length <= 0) {
-			return false;
-		} else {
-			return true;
-		}
+		return ApkDecoder.findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
 	}
 	
 	public static void flowDroid(String apkPath, String sdkPath) throws Exception {

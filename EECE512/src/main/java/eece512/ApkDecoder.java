@@ -1,6 +1,8 @@
 package eece512;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -11,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -70,17 +74,21 @@ public class ApkDecoder {
 
 						// Output and add unique elements to ret
 						for (int i = 0; i < cur.length; i++) {
-							System.out.println("[IMPORTANT] Find " + cur[i] + " in " + file.getAbsolutePath());
-
 							if (!ArrayUtils.contains(ret, cur[i])) {
+								System.out.println("[IMPORTANT] Find " + cur[i] + " in " + file.getAbsolutePath());
 								ret = ArrayUtils.add(ret, cur[i]);
+							} else {
+								System.out.println("[IMPORTANT] Find duplicated " + cur[i] + " in " + file.getAbsolutePath() + ", skipped");
 							}
 						}
 					}
 				}
 			}
 		}
-
+		
+		System.out.println("[IMPORTANT] Total number of unique controls found: " + ret.length);
+		System.out.println("---");
+		
 		return ret;
 	}
 
@@ -98,7 +106,7 @@ public class ApkDecoder {
 						for (Iterator<Attribute> itInner = ((Element) node).attributeIterator(); itInner.hasNext();) {
 							Attribute attributeInner = (Attribute) itInner.next();
 							if (attributeInner.getName().equals("id")) {
-								ret = ArrayUtils.addAll(ret, attributeInner.getValue().replaceAll("@id/", "R\\$id: int "));
+								ret = ArrayUtils.addAll(ret, attributeInner.getValue().replaceAll("@id/", ""));
 							}
 						}
 					}
@@ -144,5 +152,67 @@ public class ApkDecoder {
 
 		// Entry point for Soot
 		soot.Main.main(args);
+	}
+	
+	public static HashMap<Integer, String> findDigitalIds(String sootPath, String[] passwordIds) throws IOException {
+		HashMap<Integer, String> ret = new HashMap<Integer, String>();
+		
+		for (File f : new File(sootPath).listFiles()) {
+			if (f.toString().contains("R$id.jimple")) {
+				BufferedReader br = new BufferedReader(new FileReader(f));
+	            String readLine;
+	            while ((readLine = br.readLine()) != null) {
+	                for (String s : passwordIds) {
+	                	// Extend id to idWithRid
+	                	String idWithRid = "R$id: int " + s;
+	                	
+	                	if (readLine.contains(s)) {
+	                		// Use regex to find ID
+	                		int id = 0;
+	                		
+	                		Pattern r = Pattern.compile("= [0-9]+");
+	                		Matcher m = r.matcher(readLine);
+	                		if (m.find()) {
+	                			id = Integer.parseInt(readLine.substring(m.start() + 2, m.end()));
+	                			if (ret.containsKey(id)) {
+                					System.out.println("[IMPORTANT] " + id + " is already mapped, but appears in " + readLine);
+                					break;
+                				}
+	                		} else {
+	                			//System.out.println("[IMPORTANT] No IDs found in " + readLine);
+	                			break;
+	                		}
+	                		
+	                		// Use regex to find qualified id
+	                		String qId = "";
+	                		
+	                		r = Pattern.compile("<.+>");
+	                		m = r.matcher(readLine);
+	                		if (m.find()) {
+	                			qId = readLine.substring(m.start() + 1, m.end() - 1);
+	                		} else {
+	                			System.out.println("[IMPORTANT] Qualified ID not found in " + readLine + ", skipped");
+	                			break;
+	                		}
+	                		
+	                		// Check if qId exists
+	                		if (ret.containsValue(qId)) {
+	                			System.out.println("[IMPORTANT] " + qId + " is already mapped, but appears in " + readLine);
+	                			break;
+	                		}
+	                		
+	                		// Creating mapping
+	                		System.out.println("[IMPORTANT] Map " + qId + " to ID " + id);
+            				ret.put(id, qId);
+            				break;
+	                	}
+	                }
+	            }
+			}
+		}
+		
+		System.out.println("---");
+		
+		return ret;
 	}
 }
