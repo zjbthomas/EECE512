@@ -145,6 +145,7 @@ public class ApkDecoder {
 		}
 		
 		// Options for Soot
+		soot.G.reset();
 		Options.v().set_src_prec(Options.src_prec_apk); // Target to input APK
 		Options.v().set_output_format(Options.output_format_jimple); // Output jimple
 		Options.v().set_output_dir(apkPath.replaceAll("\\.apk","") + "\\soot");
@@ -154,7 +155,7 @@ public class ApkDecoder {
 		soot.Main.main(args);
 	}
 	
-	public static HashMap<Integer, String> findDigitalIds(String sootPath, String[] passwordIds) throws IOException {
+	public static HashMap<Integer, String> findDigitalIds(String sootPath, String[] passwordIds) throws Exception {
 		HashMap<Integer, String> ret = new HashMap<Integer, String>();
 		
 		for (File f : new File(sootPath).listFiles()) {
@@ -208,6 +209,7 @@ public class ApkDecoder {
 	                	}
 	                }
 	            }
+	            br.close();
 			}
 		}
 		
