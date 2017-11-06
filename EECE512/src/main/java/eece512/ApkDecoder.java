@@ -144,8 +144,11 @@ public class ApkDecoder {
 			return;
 		}
 		
-		// Options for Soot
+		// Reset and gc
 		soot.G.reset();
+		System.gc();
+		
+		// Options for Soot
 		Options.v().set_src_prec(Options.src_prec_apk); // Target to input APK
 		Options.v().set_output_format(Options.output_format_jimple); // Output jimple
 		Options.v().set_output_dir(apkPath.replaceAll("\\.apk","") + "\\soot");
@@ -153,6 +156,10 @@ public class ApkDecoder {
 
 		// Entry point for Soot
 		soot.Main.main(args);
+		
+		// Reset and gc
+		soot.G.reset();
+		System.gc();
 	}
 	
 	public static HashMap<Integer, String> findDigitalIds(String sootPath, String[] passwordIds) throws Exception {
@@ -160,6 +167,7 @@ public class ApkDecoder {
 		
 		for (File f : new File(sootPath).listFiles()) {
 			if (f.toString().contains("R$id.jimple")) {
+				//System.out.println("[IMPORTANT] Check file " + f.toString());
 				BufferedReader br = new BufferedReader(new FileReader(f));
 	            String readLine;
 	            while ((readLine = br.readLine()) != null) {

@@ -159,6 +159,8 @@ public class BatchApkTester {
 	}
 	
 	public static void flowDroid(String apkPath, String sdkPath) throws Exception {
+		// Reset repeat count
+		Test.resetRepeatCount();
 		// Generate input parameters for FlowDroid
 		ArrayList<String> flowDroidInputs = new ArrayList<String>();
 		flowDroidInputs.add(apkPath);
@@ -190,7 +192,7 @@ public class BatchApkTester {
 		for(File f: dir.listFiles()){
 			if (f.isDirectory()) {
 				return detectObfuscationInSmali(f);
-			} else if (f.getAbsolutePath().contains("\\a\\a.smali")) {
+			} else if (f.getAbsolutePath().contains("\\a.smali")) {
 				return true;
 			}
 	    }
