@@ -17,23 +17,20 @@ public class LogChopper {
         	// For leakage
         	if (readLine.contains("Maximum memory consumption")) {
         		foundLeak = false;
-        		continue;
         	}
         	if (foundLeak) {
         		writer.println(readLine);
-        		continue;
         	}
         	if (readLine.contains("Created a SourceSinkManager")) {
         		foundLeak = true;
-        		continue;
         	}
         	// For [IMPORTANT] logs
         	if (readLine.contains("[IMPORTANT]")) {
+        		foundLeak = false;
         		if (readLine.contains("Decoding APK")) {
         			writer.println("---");
         		}
         		writer.println(readLine);
-        		continue;
         	}
         }
         br.close();
