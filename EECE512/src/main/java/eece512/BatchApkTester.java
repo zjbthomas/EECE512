@@ -18,6 +18,7 @@ import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 
 import soot.jimple.infoflow.android.TestApps.ResultsHandler;
+import soot.jimple.infoflow.android.TestApps.SourcesSinksGenerator;
 import soot.jimple.infoflow.android.TestApps.Test;
 
 public class BatchApkTester {
@@ -57,7 +58,7 @@ public class BatchApkTester {
 				// Print separator
 				System.out.println("---");
 				// Run APK decoder
-				String[] passwordIds = decodeApk(f.toString(), args[1], true);
+				String[] passwordIds = decodeApk(f.toString(), args[1]);
 				// Skip if no EditText for password found
 				if (passwordIds.length > 0) {
 					detectedApk.add(f.toString());
@@ -72,13 +73,7 @@ public class BatchApkTester {
 					System.out.println("[IMPORTANT] Obfuscation detected");
 				}
 				// Run FlowDroid
-				flowDroid(f.toString(), args[1]);
-				// Find digital ID corresponding to String ID
-				HashMap<Integer, String> digitalIds = ApkDecoder.findDigitalIds(args[0].replaceAll("\\.apk", "") + "\\soot", passwordIds);
-				// Feed digital ID into ResultsHanlder
-				ResultsHandler.feedPasswordIds(digitalIds);
-				// Handle results
-				ResultsHandler.handleResults();
+				flowDroid(f.toString(), args[1], passwordIds);
 				// Delete folder
 				FileUtils.deleteDirectory(new File(f.toString().replaceAll("\\.apk", "")));
 			} catch (Exception e) {
@@ -139,7 +134,7 @@ public class BatchApkTester {
 	    return ret;
 	}
 	
-	public static String[] decodeApk(String apkPath, String sdkPath, boolean noSoot) throws Exception {
+	public static String[] decodeApk(String apkPath, String sdkPath) throws Exception {
 		// Generate input parameters for ApkDecoder
 		ArrayList<String> apkDecoderInputs = new ArrayList<String>();
 		apkDecoderInputs.add("-android-jars");
@@ -149,18 +144,13 @@ public class BatchApkTester {
 		apkDecoderInputs.add("android.*");
 		apkDecoderInputs.add("-process-dir");
 		apkDecoderInputs.add(apkPath);
-		if (noSoot) {
-			apkDecoderInputs.add("-nosoot");
-		}
 		// Run ApkDecoder
 		ApkDecoder.main(apkDecoderInputs.toArray(new String[apkDecoderInputs.size()]));
 		// Find EditText for password inputs
 		return ApkDecoder.findPasswordIds(apkPath.replaceAll("\\.apk", "") + "\\res");
 	}
 	
-	public static void flowDroid(String apkPath, String sdkPath) throws Exception {
-		// Reset repeat count
-		Test.resetRepeatCount();
+	public static void flowDroid(String apkPath, String sdkPath, String[] passwordIds) throws Exception {
 		// Generate input parameters for FlowDroid
 		ArrayList<String> flowDroidInputs = new ArrayList<String>();
 		flowDroidInputs.add(apkPath);
@@ -170,8 +160,33 @@ public class BatchApkTester {
 		flowDroidInputs.add("--paths");
 		flowDroidInputs.add("--aplength");
 		flowDroidInputs.add(String.valueOf(APLENGTH));
-		// Run FlowDroid
+		
+		// Find and feed digital ID into ResultsHanlder
+		HashMap<Integer, String> digitalIds = ApkDecoder.findDigitalIds(apkPath.replaceAll("\\.apk", "") + "\\soot", passwordIds);
+		ResultsHandler.feedPasswordIds(digitalIds);
+		
+		// First round: from sources to encryptions
+		SourcesSinksGenerator.fromSourcesToEncryption();
+		Test.resetRepeatCount();
 		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
+		// Handle first round results
+		int result = ResultsHandler.handleResults();
+		
+		// Second round: from encryptions to sinks
+		if (result > 0) {
+			SourcesSinksGenerator.fromEncryptionToSinks();
+			Test.resetRepeatCount();
+			Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
+			// Handle second round results
+			ResultsHandler.handleResults();
+		}
+		
+		// Thirf round: from sources to sinks
+		SourcesSinksGenerator.fromSourcesToSinks();
+		Test.resetRepeatCount();
+		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
+		// Handle second round results
+		ResultsHandler.handleResults();
 	}
 	
 	/*

@@ -14,18 +14,12 @@ public class SingleApkAnalyzer {
 	 */
 	public static void main(String[] args) throws Exception {
 		// Run APK decoder
-		String[] passwordIds = BatchApkTester.decodeApk(args[0], args[1], false);
+		String[] passwordIds = BatchApkTester.decodeApk(args[0], args[1]);
 		// Run obfuscation detection
 		if (BatchApkTester.detectObfuscation(new File(args[0].replaceAll("\\.apk", "")))) {
 			System.out.println("[IMPORTANT] Obfuscation detected");
 		}
 		// Run FlowDroid
-		BatchApkTester.flowDroid(args[0], args[1]);
-		// Find digital ID corresponding to String ID
-		HashMap<Integer, String> digitalIds = ApkDecoder.findDigitalIds(args[0].replaceAll("\\.apk", "") + "\\soot", passwordIds);
-		// Feed digital ID into ResultsHanlder
-		ResultsHandler.feedPasswordIds(digitalIds);
-		// Handle results
-		ResultsHandler.handleResults();
+		BatchApkTester.flowDroid(args[0], args[1], passwordIds);
 	}
 }

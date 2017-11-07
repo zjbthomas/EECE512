@@ -46,7 +46,7 @@ public class FileApkTester {
 				// Print separator
 				System.out.println("------");
 				// Run APK decoder
-				String[] passwordIds = BatchApkTester.decodeApk(readLine, args[1], false);
+				String[] passwordIds = BatchApkTester.decodeApk(readLine, args[1]);
 				// Skip if no EditText for password found
 				if (passwordIds.length <= 0) {
 					System.out.println("[IMPORTANT] No password EditText detected, skipped");
@@ -60,13 +60,7 @@ public class FileApkTester {
 					System.out.println("[IMPORTANT] Obfuscation detected");
 				}
 				// Run FlowDroid
-				BatchApkTester.flowDroid(readLine, args[1]);
-				// Find digital ID corresponding to String ID
-				HashMap<Integer, String> digitalIds = ApkDecoder.findDigitalIds(readLine.replaceAll("\\.apk", "") + "\\soot", passwordIds);
-				// Feed digital ID into ResultsHanlder
-				ResultsHandler.feedPasswordIds(digitalIds);
-				// Handle results
-				ResultsHandler.handleResults();
+				BatchApkTester.flowDroid(readLine, args[1], passwordIds);
 				// Delete folder
 				if (DELETEDIR) {
 					FileUtils.deleteDirectory(new File(readLine.replaceAll("\\.apk", "")));
