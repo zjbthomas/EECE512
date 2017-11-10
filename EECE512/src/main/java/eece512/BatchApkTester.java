@@ -122,7 +122,7 @@ public class BatchApkTester {
 		ArrayList<File> ret = new ArrayList<File>();
 	    for(File f: dir.listFiles()){
 	        if(f.isFile() && f.toString().contains(".apk")){
-	        	System.out.println("Add " + f.toString() + " to list");
+	        	//System.out.println("Add " + f.toString() + " to list");
 	        	ret.add(f);
 	        	
 	        	// Pre-delete folder
@@ -166,6 +166,7 @@ public class BatchApkTester {
 		ResultsHandler.feedPasswordIds(digitalIds);
 		
 		// First round: from sources to encryptions
+		System.out.println("[IMPORTANT] Run from sources to encryption");
 		SourcesSinksGenerator.fromSourcesToEncryption();
 		Test.resetRepeatCount();
 		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
@@ -174,6 +175,7 @@ public class BatchApkTester {
 		
 		// Second round: from encryptions to sinks
 		if (result > 0) {
+			System.out.println("[IMPORTANT] Run from encryption to sinks");
 			SourcesSinksGenerator.fromEncryptionToSinks();
 			Test.resetRepeatCount();
 			Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
@@ -182,6 +184,7 @@ public class BatchApkTester {
 		}
 		
 		// Thirf round: from sources to sinks
+		System.out.println("[IMPORTANT] Run from sources to sinks");
 		SourcesSinksGenerator.fromSourcesToSinks();
 		Test.resetRepeatCount();
 		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
