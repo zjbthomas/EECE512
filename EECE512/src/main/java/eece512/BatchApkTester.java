@@ -165,31 +165,39 @@ public class BatchApkTester {
 		HashMap<Integer, String> digitalIds = ApkDecoder.findDigitalIds(apkPath.replaceAll("\\.apk", "") + "\\soot", passwordIds);
 		ResultsHandler.feedPasswordIds(digitalIds);
 		
-		// First round: from sources to encryptions
-		System.out.println("[IMPORTANT] Run from sources to encryption");
-		SourcesSinksGenerator.fromSourcesToEncryption();
-		Test.resetRepeatCount();
-		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
-		// Handle first round results
-		int result = ResultsHandler.handleResults();
+		// Reset
+		ResultsHandler.initialize();
 		
-		// Second round: from encryptions to sinks
-		if (result > 0) {
-			System.out.println("[IMPORTANT] Run from encryption to sinks");
-			SourcesSinksGenerator.fromEncryptionToSinks();
+		for (int direct = 0; direct <= 1; direct++) {
+			// First round: from sources to encryptions
+			System.out.println("[IMPORTANT] Run from " + ((direct == 1)? "direct": "indirect") + " sources to conversions");
+			SourcesSinksGenerator.fromSourcesToEncryption((direct == 1));
+			Test.resetRepeatCount();
+			Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
+			// Handle first round results
+			int result = ResultsHandler.handleResults((direct == 1));
+			
+			// Second round: from encryptions to sinks
+			if (result > 0) {
+				System.out.println("[IMPORTANT] Run from conversions to sinks");
+				SourcesSinksGenerator.fromEncryptionToSinks();
+				Test.resetRepeatCount();
+				Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
+				// Handle second round results
+				ResultsHandler.handleResults((direct == 1));
+			}
+			
+			// Thirf round: from sources to sinks
+			System.out.println("[IMPORTANT] Run from " + ((direct == 1)? "direct": "indirect") + " sources to sinks");
+			SourcesSinksGenerator.fromSourcesToSinks((direct == 1));
 			Test.resetRepeatCount();
 			Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
 			// Handle second round results
-			ResultsHandler.handleResults();
+			ResultsHandler.handleResults((direct == 1));
 		}
 		
-		// Thirf round: from sources to sinks
-		System.out.println("[IMPORTANT] Run from sources to sinks");
-		SourcesSinksGenerator.fromSourcesToSinks();
-		Test.resetRepeatCount();
-		Test.main(flowDroidInputs.toArray(new String[flowDroidInputs.size()]));
-		// Handle second round results
-		ResultsHandler.handleResults();
+		// Print results
+		ResultsHandler.printResults();
 	}
 	
 	/*
