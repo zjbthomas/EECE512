@@ -175,7 +175,7 @@ public class ApkDecoder {
 	                	// Extend id to idWithRid
 	                	String idWithRid = "R$id: int " + s;
 	                	
-	                	if (readLine.contains(s)) {
+	                	if (readLine.contains(idWithRid)) {
 	                		// Use regex to find ID
 	                		int id = 0;
 	                		
