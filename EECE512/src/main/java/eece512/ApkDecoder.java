@@ -173,7 +173,7 @@ public class ApkDecoder {
 	            while ((readLine = br.readLine()) != null) {
 	                for (String s : passwordIds) {
 	                	// Extend id to idWithRid
-	                	String idWithRid = "R$id: int " + s;
+	                	String idWithRid = "R$id: int " + s + ">";
 	                	
 	                	if (readLine.contains(idWithRid)) {
 	                		// Use regex to find ID
